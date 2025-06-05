@@ -1,7 +1,6 @@
 
 import streamlit as st
 import random
-import time
 import base64
 import pandas as pd
 import plotly.express as px
@@ -9,7 +8,7 @@ import os
 
 st.set_page_config(page_title="Bac Bo Royale", layout="centered", page_icon="🎲")
 
-# Tema customizado
+# Tema escuro/claro
 st.markdown("""
 <style>
 body {
@@ -25,12 +24,15 @@ body {
 
 st.title("🎲 Bac Bo Royale - Simulador Avançado")
 
-# Inicializa histórico
+# Inicializar estados
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# Rolar dados
-if st.button("🎲 Rolar Dados"):
+if "trigger_roll" not in st.session_state:
+    st.session_state.trigger_roll = False
+
+# Função para jogar
+def rolar_dados():
     d1, d2 = random.randint(1, 6), random.randint(1, 6)
     d3, d4 = random.randint(1, 6), random.randint(1, 6)
     sum_a, sum_b = d1 + d2, d3 + d4
@@ -46,15 +48,17 @@ if st.button("🎲 Rolar Dados"):
         "Resultado": result,
         "Data/Hora": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
     })
-    st.experimental_rerun()
 
-# Tabela de histórico
+# Botão de rolar dados
+if st.button("🎲 Rolar Dados"):
+    rolar_dados()
+
+# Exibir histórico
 if st.session_state.history:
     df = pd.DataFrame(st.session_state.history)
     st.subheader("📜 Histórico de Resultados")
     st.dataframe(df[::-1], use_container_width=True)
 
-    # Estatísticas
     st.subheader("📊 Estatísticas")
     total = len(df)
     counts = df["Resultado"].value_counts()
@@ -62,16 +66,13 @@ if st.session_state.history:
         count = counts.get(res, 0)
         st.write(f"**{res}**: {count} ({(count/total*100):.1f}%)")
 
-    # Gráfico
     fig = px.bar(x=counts.index, y=counts.values, labels={"x": "Resultado", "y": "Frequência"})
     st.plotly_chart(fig, use_container_width=True)
 
-    # Exportar
     st.download_button("📁 Exportar CSV", df.to_csv(index=False).encode(), "historico_bacbo.csv", "text/csv")
 
-    # Reset
     if st.button("🗑️ Resetar Histórico"):
         st.session_state.history = []
-        st.experimental_rerun()
+
 else:
     st.info("Clique em 'Rolar Dados' para iniciar.")
